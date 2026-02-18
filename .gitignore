@@ -13,3 +13,6 @@ build/
 
 # Maven
 .mvn/wrapper/maven-wrapper.jar
+
+# Local duplicate project folder
+NexCart-Cloud-Native-E-Commerce-Microservices-Platform/
