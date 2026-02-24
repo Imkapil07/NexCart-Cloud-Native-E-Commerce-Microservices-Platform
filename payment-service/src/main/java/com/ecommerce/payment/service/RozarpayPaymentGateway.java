@@ -32,7 +32,6 @@ public class RozarpayPaymentGateway implements PaymentGateway{
                     order.get("status"),
                     "RAZORPAY");
         } catch (RazorpayException e) {
-            // TODO: handle exception
             throw new IllegalStateException("RazorpayOrder Create failed");
         }
     }

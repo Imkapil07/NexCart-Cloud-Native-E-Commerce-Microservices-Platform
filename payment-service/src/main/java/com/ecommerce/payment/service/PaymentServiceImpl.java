@@ -8,6 +8,7 @@ import com.ecommerce.payment.enums.PaymentStatus;
 import com.ecommerce.payment.exception.PaymentNotFoundException;
 import com.ecommerce.payment.repository.PaymentRepository;
 import com.ecommerce.payment.util.TransactionGenerator;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -36,8 +37,10 @@ public class PaymentServiceImpl  implements PaymentService{
 
     @Override
     public PaymentResponse updatePaymentStatus(Long PaymentId, PaymentStatusUpdateRequest request) {
-        // TODO Auto-generated method stub
-        Payment payment = paymentRepo.findById(PaymentId).orElseThrow(()-> new PaymentNotFoundException("payment not found with id "+PaymentId));
+        Payment payment = paymentRepo
+                .findById(PaymentId)
+                .orElseThrow(()->
+                        new PaymentNotFoundException("payment not found with id "+PaymentId));
         payment.setPaymentStatus(request.getPaymentStatus());
         return mapToResponse(payment);
     }

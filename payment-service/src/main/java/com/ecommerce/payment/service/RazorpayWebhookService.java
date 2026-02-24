@@ -5,7 +5,7 @@ import com.ecommerce.payment.client.InventoryClient;
 import com.ecommerce.payment.entity.Payment;
 import com.ecommerce.payment.enums.PaymentStatus;
 import com.ecommerce.payment.repository.PaymentRepository;
-import com.razorpay.OrderClient;
+import com.ecommerce.payment.client.OrderClient;
 import com.razorpay.Utils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -64,7 +64,6 @@ public class RazorpayWebhookService {
         try {
             Utils.verifyWebhookSignature(payload, signature, webhookSecret);
         } catch (Exception e) {
-            // TODO: handle exception
             log.error("invalid razorpay webhook signature");
             throw new SecurityException("Invalid razorpay webhook signature");
         }

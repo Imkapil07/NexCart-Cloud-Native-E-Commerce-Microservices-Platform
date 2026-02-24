@@ -17,5 +17,6 @@ public class RequestPayment {
     String orderId;
     @Positive
     private BigDecimal amount;
-    @NotNull private PaymentMethod paymentMethod;
+    @NotNull
+    private PaymentMethod paymentMethod;
 }

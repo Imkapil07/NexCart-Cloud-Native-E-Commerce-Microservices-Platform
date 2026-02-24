@@ -24,6 +24,10 @@ public class Payment {
     private Long id;
     @Column(nullable = false)
     private String orderId;
+    /*
+    - precision = 12 : Total 12 digits allowed.
+    - scale = 2 : after decimal how many digits allowed
+     */
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal amount;
     @Enumerated(EnumType.STRING)
