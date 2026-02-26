@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
  * Maps between Product entity and ProductDto.
  **/
 @Component
-public class ProductMapper {
+public class   ProductMapper {
     /**
      * Converts entity to DTO; includes categoryId from category relation.
      **/

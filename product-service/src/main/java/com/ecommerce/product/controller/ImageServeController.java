@@ -20,7 +20,7 @@ import java.nio.file.Paths;
 @RestController
 @RequiredArgsConstructor
 public class ImageServeController {
-    private final String uploadDir = System.getProperty("user.dir")+"/upload/products";
+    private final String uploadDir = System.getProperty("user.dir")+"/uploads/products";
     /**
      * Returns image resource by file name; 404 if not found.
      **/

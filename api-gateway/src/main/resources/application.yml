@@ -1,5 +1,5 @@
 server:
-  port: 8084
+  port: 8080
 
 spring:
   application:
@@ -24,3 +24,12 @@ eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+
+  zipkin:
+    tracing:
+      endpoint: http://localhost:9411/api/v2/spans

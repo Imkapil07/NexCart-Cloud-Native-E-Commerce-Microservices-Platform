@@ -1,0 +1,309 @@
+================================================================================
+  API REFERENCE – BASE URL, HOW TO START & DUMMY DATA (Postman/cURL)
+================================================================================
+
+  Use this file to know: which URL to use, startup order, and example
+  request/response JSON for Register, Login, Add Product, Place Order,
+  Payment, Inventory, etc.
+
+--------------------------------------------------------------------------------
+  1. BASE URL (use this for all API calls)
+--------------------------------------------------------------------------------
+  If you use API Gateway (recommended):
+    Base URL:   http://localhost:8080
+
+  All examples below use this base. Example:
+    Login URL = http://localhost:8080/api/users/login
+    Products  = http://localhost:8080/api/products
+
+  Make sure API Gateway and the required services are running (see Section 2).
+  If a path returns 404 from gateway, add a route in api-gateway or call the
+  service directly (see API_ENDPOINTS.txt for direct URLs and ports).
+
+--------------------------------------------------------------------------------
+  2. HOW TO START (which service first, which URL to fix)
+--------------------------------------------------------------------------------
+  Start in this order (details in HOW_TO_START.txt):
+
+    1) Kafka          (Docker)   →  cd kafka-infra && docker compose up -d
+    2) Eureka Server   →  Run eureka-server          (http://localhost:8761)
+    3) User Service    →  Run user-service          (port 8086)
+    4) Product Service →  Run product-service       (port 8085)
+    5) Inventory       →  Run inventory-service     (port 8081)
+    6) Order Service   →  Run order-service         (port 8083)
+    7) Payment Service →  Run payment-service       (port 8084)
+    8) Notification   →  Run notification-service  (port 8082)
+    9) API Gateway     →  Run api-gateway          (port 8080)  ← your base URL
+
+  After step 9, use base URL:  http://localhost:8080
+
+  If a call fails: check Eureka (http://localhost:8761) that the service
+  is registered, and that MySQL/Kafka are running if needed.
+
+--------------------------------------------------------------------------------
+  3. USER SERVICE – Register, Login, Get User
+--------------------------------------------------------------------------------
+  Base path:  /api/users
+
+  ----- 3.1 REGISTER (POST) -----
+  URL:    POST  http://localhost:8080/api/users/register
+  Body:   JSON (Content-Type: application/json)
+
+  Dummy request:
+  {
+    "name": "John Doe",
+    "email": "john.doe@example.com",
+    "password": "password123",
+    "phone": "9876543210"
+  }
+
+  Example response (201 Created):
+  {
+    "id": 1,
+    "name": "John Doe",
+    "email": "john.doe@example.com",
+    "phone": "9876543210",
+    "roles": "ROLE_USER",
+    "createdAt": "2026-02-17T10:00:00Z",
+    "updatedAt": "2026-02-17T10:00:00Z"
+  }
+
+  ----- 3.2 LOGIN (POST) -----
+  URL:    POST  http://localhost:8080/api/users/login
+  Body:   JSON
+
+  Dummy request:
+  {
+    "email": "john.doe@example.com",
+    "password": "password123"
+  }
+
+  Example response (200 OK) – save "token" for protected APIs:
+  {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "tokenType": "Bearer",
+    "userId": 1,
+    "email": "john.doe@example.com",
+    "name": "John Doe"
+  }
+
+  Use in headers for protected endpoints:
+    Authorization: Bearer <paste_token_here>
+
+  ----- 3.3 GET USER BY ID (GET) – needs auth -----
+  URL:    GET  http://localhost:8080/api/users/1
+  Header: Authorization: Bearer <token>
+
+  Example response (200 OK):
+  {
+    "id": 1,
+    "name": "John Doe",
+    "email": "john.doe@example.com",
+    "phone": "9876543210",
+    "roles": "ROLE_USER",
+    "createdAt": "2026-02-17T10:00:00Z",
+    "updatedAt": "2026-02-17T10:00:00Z"
+  }
+
+--------------------------------------------------------------------------------
+  4. CATEGORY (Product Service) – Create, List, Get, Update, Delete
+--------------------------------------------------------------------------------
+  Base path:  /api/categories
+
+  ----- 4.1 CREATE CATEGORY (POST) -----
+  URL:    POST  http://localhost:8080/api/categories
+  Body:   JSON
+
+  Dummy request:
+  {
+    "name": "Electronics",
+    "description": "Mobile, Laptop, Accessories",
+    "parentId": null
+  }
+
+  Example response: same structure with "id" added (e.g. id: 1).
+
+  ----- 4.2 GET ALL CATEGORIES (GET) -----
+  URL:    GET  http://localhost:8080/api/categories
+
+  ----- 4.3 GET CATEGORY BY ID (GET) -----
+  URL:    GET  http://localhost:8080/api/categories/1
+
+  ----- 4.4 UPDATE CATEGORY (PUT) -----
+  URL:    PUT  http://localhost:8080/api/categories/1
+  Body:   JSON  { "id": 1, "name": "Electronics & Gadgets", "description": "...", "parentId": null }
+
+  ----- 4.5 DELETE CATEGORY (DELETE) -----
+  URL:    DELETE  http://localhost:8080/api/categories/1
+
+--------------------------------------------------------------------------------
+  5. PRODUCT SERVICE – Add Product, Update, Delete, Get, Search, Filter
+--------------------------------------------------------------------------------
+  Base path:  /api/products
+
+  ----- 5.1 ADD / CREATE PRODUCT (POST) -----
+  URL:    POST  http://localhost:8080/api/products
+  Body:   JSON
+
+  Dummy request (categoryId must exist – create category first):
+  {
+    "name": "Wireless Mouse",
+    "description": "Ergonomic wireless mouse with USB receiver",
+    "price": 599.00,
+    "discountPrice": 499.00,
+    "quantity": 100,
+    "brand": "TechBrand",
+    "imageUrl": null,
+    "categoryId": 1
+  }
+
+  Example response: same object with "id" set (e.g. id: 1).
+
+  ----- 5.2 UPDATE PRODUCT (PUT) -----
+  URL:    PUT  http://localhost:8080/api/products/1
+  Body:   JSON  (full product object including id; same fields as create)
+
+  ----- 5.3 DELETE PRODUCT (DELETE) -----
+  URL:    DELETE  http://localhost:8080/api/products/1
+
+  ----- 5.4 GET PRODUCT BY ID (GET) -----
+  URL:    GET  http://localhost:8080/api/products/1
+
+  ----- 5.5 GET ALL PRODUCTS (paginated) -----
+  URL:    GET  http://localhost:8080/api/products?page=0&size=10&sortBy=id&sortDir=asc
+
+  ----- 5.6 SEARCH PRODUCTS -----
+  URL:    GET  http://localhost:8080/api/products/search?keyword=mouse&page=0&size=10
+
+  ----- 5.7 FILTER PRODUCTS -----
+  URL:    GET  http://localhost:8080/api/products/filter?categoryId=1&minPrice=100&maxPrice=1000&page=0&size=10
+
+  ----- 5.8 ADVANCE FILTER -----
+  URL:    GET  http://localhost:8080/api/products/advance-filter?keyword=mouse&categoryId=1&minPrice=100&maxPrice=5000&page=0&size=10&sortBy=price&sortDir=asc
+
+  ----- 5.9 UPLOAD PRODUCT IMAGE (POST, multipart) -----
+  URL:    POST  http://localhost:8080/api/products/1/upload-image
+  Body:   form-data  key: file, type: File
+
+--------------------------------------------------------------------------------
+  6. INVENTORY SERVICE – Add Stock, Check Stock
+--------------------------------------------------------------------------------
+  Base path:  /api/inventory
+
+  ----- 6.1 ADD INVENTORY (POST) -----
+  URL:    POST  http://localhost:8080/api/inventory
+  Body:   JSON
+
+  Dummy request (skuCode should match product SKU used in order):
+  {
+    "skuCode": "MOUSE-001",
+    "quantity": 50
+  }
+
+  ----- 6.2 CHECK STOCK (GET) -----
+  URL:    GET  http://localhost:8080/api/inventory/MOUSE-001
+
+  Example response:  true/false or stock info (depends on your API).
+
+--------------------------------------------------------------------------------
+  7. ORDER SERVICE – Place Order
+--------------------------------------------------------------------------------
+  Base path:  /api/order
+
+  ----- 7.1 PLACE ORDER (POST) -----
+  URL:    POST  http://localhost:8080/api/order
+  Body:   JSON
+
+  Dummy request (skuCode must exist in inventory; price in decimal):
+  {
+    "skuCode": "MOUSE-001",
+    "quantity": 2,
+    "price": 499.00
+  }
+
+  Example response (200 OK) – use orderNumber in payment:
+  {
+    "orderNumber": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "orderStatus": "PLACED"
+  }
+
+  Use "orderNumber" as orderId when creating payment (Section 8).
+
+--------------------------------------------------------------------------------
+  8. PAYMENT SERVICE – Create Payment, Get by Order, Update Status
+--------------------------------------------------------------------------------
+  Base path:  /api/payments
+
+  ----- 8.1 CREATE PAYMENT (POST) -----
+  URL:    POST  http://localhost:8080/api/payments
+  Body:   JSON
+
+  Dummy request (orderId = orderNumber from Place Order response):
+  {
+    "orderId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "amount": 998.00,
+    "paymentMethod": "UPI"
+  }
+
+  paymentMethod allowed values:  CARD | UPI | NET_BANKING | WALLET | COD
+
+  Example response (200 OK):
+  {
+    "paymentId": 1,
+    "orderId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "amount": 998.00,
+    "paymentStatus": "PENDING",
+    "transactionId": "order_xyz_razorpay_id"
+  }
+
+  ----- 8.2 GET PAYMENT BY ORDER ID (GET) -----
+  URL:    GET  http://localhost:8080/api/payments/order/a1b2c3d4-e5f6-7890-abcd-ef1234567890
+
+  ----- 8.3 UPDATE PAYMENT STATUS (PUT) -----
+  URL:    PUT  http://localhost:8080/api/payments/1/status
+  Body:   JSON
+
+  {
+    "paymentStatus": "SUCCESS"
+  }
+
+  paymentStatus:  PENDING | SUCCESS | FAILED
+
+--------------------------------------------------------------------------------
+  9. RAZORPAY WEBHOOK (Payment Service)
+--------------------------------------------------------------------------------
+  URL:    POST  http://localhost:8080/api/payment/webhook/razorpay
+  Header: X-Razorpay-Signature: <signature_from_razorpay>
+  Body:   Raw payload (as sent by Razorpay)
+
+  (Used by Razorpay server only; no dummy JSON needed for normal testing.)
+
+--------------------------------------------------------------------------------
+  10. QUICK FLOW – Register → Login → Category → Product → Inventory → Order → Payment
+--------------------------------------------------------------------------------
+  1. POST /api/users/register        (dummy: name, email, password, phone)
+  2. POST /api/users/login          (dummy: email, password) → copy token
+  3. POST /api/categories          (dummy: name, description) → note categoryId
+  4. POST /api/products             (dummy: name, description, price, categoryId, etc.)
+  5. POST /api/inventory            (dummy: skuCode, quantity) – skuCode from product
+  6. POST /api/order                (dummy: skuCode, quantity, price) → copy orderNumber
+  7. POST /api/payments             (dummy: orderId = orderNumber, amount, paymentMethod)
+
+  Base URL for all:  http://localhost:8080
+
+--------------------------------------------------------------------------------
+  11. FORMATTING TIPS (Postman / cURL)
+--------------------------------------------------------------------------------
+  - Content-Type:  application/json  for POST/PUT with JSON body.
+  - Auth:          Header  Authorization: Bearer <token>  for /api/users/{id}.
+  - Pagination:    page=0, size=10, sortBy=id, sortDir=asc  where supported.
+  - Numbers:      price/amount as number (e.g. 499.00), not string.
+
+  cURL example – Login:
+  curl -X POST http://localhost:8080/api/users/login ^
+    -H "Content-Type: application/json" ^
+    -d "{\"email\":\"john.doe@example.com\",\"password\":\"password123\"}"
+
+  (Use one line or escape quotes as per your shell.)
+
+================================================================================

@@ -146,7 +146,7 @@ public class ProductServiceImpl implements ProductService{
         }
         long maxSize = 2*1024*1024;
         if(file.getSize() > maxSize) {
-            throw new RuntimeException("File size must be less trhen 2MB");
+            throw new RuntimeException("File size must be less then 2MB");
         }
         List<String> allowedType = List.of("image/jpeg","image/png","image/jpg");
         if(!allowedType.contains(file.getContentType())) {

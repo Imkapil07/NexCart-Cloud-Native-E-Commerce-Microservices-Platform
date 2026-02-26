@@ -1,0 +1,112 @@
+================================================================================
+  MICROSERVICE ECOMMERCE PROJECT - HOW TO START (Startup Order)
+================================================================================
+
+  Order matters: some services depend on others. Follow this sequence.
+
+--------------------------------------------------------------------------------
+  STEP 0: PREREQUISITES
+--------------------------------------------------------------------------------
+  - JDK 21 (recommended; avoid JDK 24 for Lombok compatibility)
+  - Maven
+  - MySQL running on localhost:3306
+  - (Optional) Zipkin on localhost:9411 for distributed tracing
+
+  Create databases (one-time):
+    CREATE DATABASE user_db;
+    CREATE DATABASE product_db;
+    CREATE DATABASE order_db;
+    CREATE DATABASE inventory_db;
+    CREATE DATABASE payment_db;
+    CREATE DATABASE notification_db;
+
+--------------------------------------------------------------------------------
+  STEP 1: START KAFKA (Docker)
+--------------------------------------------------------------------------------
+  cd kafka-infra
+  docker compose up -d
+
+  Used by: order-service (producer), inventory-service (consumer),
+           notification-service (consumer)
+
+--------------------------------------------------------------------------------
+  STEP 2: START EUREKA SERVER (First Java service)
+--------------------------------------------------------------------------------
+  Run: eureka-server
+  Port: 8761
+  URL: http://localhost:8761
+
+  Why first: All other services register here. Start this before any
+             user/product/order/inventory/payment/notification/gateway.
+
+--------------------------------------------------------------------------------
+  STEP 3: START CORE SERVICES (order doesn’t matter among these three)
+--------------------------------------------------------------------------------
+  - user-service       (port 8086)  – Eureka + MySQL
+  - product-service    (port 8085)  – Eureka + MySQL
+  - inventory-service  (port 8081)  – Eureka + Kafka + MySQL
+
+  Why before order: order-service calls inventory-service via Feign.
+
+--------------------------------------------------------------------------------
+  STEP 4: START ORDER SERVICE
+--------------------------------------------------------------------------------
+  Run: order-service
+  Port: 8083
+
+  Depends on: Eureka, inventory-service (Feign), Kafka (publishes order placed).
+
+--------------------------------------------------------------------------------
+  STEP 5: START PAYMENT SERVICE
+--------------------------------------------------------------------------------
+  Run: payment-service
+  Port: 8084
+
+  Depends on: Eureka, order-service (Feign confirm/fail),
+              inventory-service (Feign commit/rollback).
+
+--------------------------------------------------------------------------------
+  STEP 6: START NOTIFICATION SERVICE
+--------------------------------------------------------------------------------
+  Run: notification-service
+  Port: 8082
+
+  Depends on: Eureka, Kafka (consumes order events for email/SMS).
+
+--------------------------------------------------------------------------------
+  STEP 7: START API GATEWAY (Last)
+--------------------------------------------------------------------------------
+  Run: api-gateway
+  Port: 8080
+  URL: http://localhost:8080
+
+  Why last: Gateway routes to services by name via Eureka. Start after
+            the services you want to expose (user, product, order, etc.)
+            are up and registered.
+
+--------------------------------------------------------------------------------
+  QUICK REFERENCE – STARTUP ORDER
+--------------------------------------------------------------------------------
+  1. Kafka          (docker)     – kafka-infra
+  2. Eureka Server               – eureka-server       :8761
+  3. User Service                – user-service        :8086
+  4. Product Service             – product-service    :8085
+  5. Inventory Service           – inventory-service  :8081
+  6. Order Service               – order-service      :8083
+  7. Payment Service             – payment-service    :8084
+  8. Notification Service        – notification-service :8082
+  9. API Gateway                 – api-gateway        :8080
+
+  Client/Frontend base URL: http://localhost:8080 (via gateway)
+
+--------------------------------------------------------------------------------
+  TIPS
+--------------------------------------------------------------------------------
+  - Use JDK 21 in IDE and Maven for payment-service and notification-service
+    to avoid Lombok “TypeTag :: UNKNOWN” / “main class not found” issues.
+  - If a service fails to start, check: MySQL, Kafka, Eureka, and that
+    dependent services are running (see “Depends on” above).
+  - Eureka dashboard: http://localhost:8761 – verify all apps are registered
+    before using the API Gateway.
+
+================================================================================
