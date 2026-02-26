@@ -1,0 +1,129 @@
+================================================================================
+  MICROSERVICE ECOMMERCE PROJECT - ALL API ENDPOINTS / URLS
+================================================================================
+
+BASE URLS
+---------
+  API Gateway (use this when frontend or client calls through gateway):  http://localhost:8080
+  Eureka Dashboard:                                                      http://localhost:8761
+
+  Direct service URLs (if not using gateway):
+    User Service:        http://localhost:8086
+    Product Service:    http://localhost:8085
+    Order Service:      http://localhost:8083
+    Payment Service:    http://localhost:8084
+    Inventory Service:  http://localhost:8081
+    Notification Service: http://localhost:8082
+
+
+================================================================================
+  USER SERVICE  (base: /api/users)
+================================================================================
+  POST   /api/users/register          Register new user
+  POST   /api/users/login             Login (returns JWT)
+  GET    /api/users/{id}              Get user by ID (auth required)
+
+  Via Gateway:  http://localhost:8080/api/users/...
+
+
+================================================================================
+  PRODUCT SERVICE  (base: /api/products)
+================================================================================
+  POST   /api/products                      Create product
+  PUT    /api/products/{id}                 Update product
+  DELETE /api/products/{id}                 Delete product
+  GET    /api/products/{id}                 Get product by ID
+  GET    /api/products                      Get all products (paginated: page, size, sortBy, sortDir)
+  GET    /api/products/search               Search (keyword, page, size)
+  GET    /api/products/filter               Filter (categoryId, minPrice, maxPrice, page, size)
+  GET    /api/products/advance-filter       Advance filter (keyword, categoryId, minPrice, maxPrice, page, size, sortBy, sortDir)
+  POST   /api/products/{id}/upload-image    Upload image for product (multipart file)
+
+  Via Gateway:  http://localhost:8080/api/products/...
+
+
+================================================================================
+  CATEGORY (Product Service)  (base: /api/categories)
+================================================================================
+  POST   /api/categories           Create category
+  GET    /api/categories           Get all categories
+  GET    /api/categories/{id}      Get category by ID
+  PUT    /api/categories/{id}      Update category
+  DELETE /api/categories/{id}      Delete category
+
+  Via Gateway:  http://localhost:8080/api/categories/...
+
+
+================================================================================
+  PRODUCT IMAGES  (Product Service - ImageServeController)
+================================================================================
+  GET    /products/images/{fileName}    Serve product image by file name
+
+  Via Gateway:  http://localhost:8080/products/images/{fileName}
+  (Note: Gateway must route this path to product-service if used through gateway)
+
+
+================================================================================
+  ORDER SERVICE  (base: /api/order)
+================================================================================
+  POST   /api/order                Place order (body: OrderRequest - skuCode, quantity, etc.)
+
+  Via Gateway:  http://localhost:8080/api/order
+
+
+================================================================================
+  INVENTORY SERVICE  (base: /api/inventory)
+================================================================================
+  GET    /api/inventory/{skuCode}   Check if product in stock (by skuCode)
+  POST   /api/inventory            Add inventory (body: InventoryRequest)
+
+  Via Gateway:  http://localhost:8080/api/inventory/...
+
+
+================================================================================
+  PAYMENT SERVICE  (base: /api/payments)
+================================================================================
+  POST   /api/payments                    Create payment (body: RequestPayment - orderId, amount, etc.)
+  GET    /api/payments/order/{orderId}    Get payment by order ID
+  PUT    /api/payments/{paymentId}/status Update payment status (body: PaymentStatusUpdateRequest)
+
+  Via Gateway:  http://localhost:8080/api/payments/...
+
+
+================================================================================
+  PAYMENT WEBHOOK  (Payment Service - Razorpay)
+================================================================================
+  POST   /api/payment/webhook/razorpay    Razorpay webhook (header: X-Razorpay-Signature, body: raw payload)
+
+  Via Gateway:  http://localhost:8080/api/payment/webhook/razorpay
+  (Razorpay dashboard webhook URL should point to this; gateway must route /api/payment/** to payment-service)
+
+
+================================================================================
+  INTER-SERVICE (used by other services, not directly by client)
+================================================================================
+  Order -> Inventory:
+    GET  /api/inventory/{skuCode}   (isInStock - Feign from order-service)
+
+  Payment -> Order (expected by payment-service Feign client):
+    POST /api/order/{orderId}/confirm   (not yet implemented in order-service)
+    POST /api/order/{orderId}/fail     (not yet implemented in order-service)
+
+  Payment -> Inventory (expected by payment-service Feign client):
+    POST /api/inventory/{orderId}/commit    (not yet implemented in inventory-service)
+    POST /api/inventory/{orderId}/rollback  (not yet implemented in inventory-service)
+
+
+================================================================================
+  QUICK REFERENCE - GATEWAY BASE
+================================================================================
+  If all routes are configured in API Gateway, use:
+    Base URL:  http://localhost:8080
+
+  Example:
+    Login:           POST http://localhost:8080/api/users/login
+    Get products:    GET  http://localhost:8080/api/products?page=0&size=10
+    Place order:     POST http://localhost:8080/api/order
+    Create payment: POST http://localhost:8080/api/payments
+
+================================================================================
