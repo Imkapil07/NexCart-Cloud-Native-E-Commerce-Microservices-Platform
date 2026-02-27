@@ -13,32 +13,31 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
- * Spring Security config: stateless JWT auth,
- * public register/login/actuator, BCrypt for passwords.
- **/
+ * Security: custom login + JWT only. No Basic Auth, no form login.
+ * Public: /api/users/register, /api/users/login, /actuator.
+ * All other requests require Authorization: Bearer &lt;token&gt; from custom login.
+ */
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
-    private final JwtAuthenticationFilter JwtFilter;
-    /** BCrypt password encoder for storing
-     *  and 
-     * verifying user passwords. 
-     **/
+    private final JwtAuthenticationFilter jwtFilter;
+
     @Bean
-    public PasswordEncoder PasswordEncoder() {
+    public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-    /**
-     * Stateless security: register/login/actuator public;
-     * all other requests require valid JWT.
-     **/
+
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception{
-        http.csrf(csrf -> csrf.disable())
-                .sessionManagement(sess ->sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth.requestMatchers("/api/users/register", "/api/users/login", "/actuator/**").permitAll()
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        return http
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .httpBasic(basic -> basic.disable())
+                .formLogin(form -> form.disable())
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/users/register", "/api/users/login", "/actuator/**").permitAll()
                         .anyRequest().authenticated())
-                .addFilterBefore(JwtFilter, UsernamePasswordAuthenticationFilter.class);
-        return http.build();
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+                .build();
     }
 }

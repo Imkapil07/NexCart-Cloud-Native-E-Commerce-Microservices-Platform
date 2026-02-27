@@ -1,5 +1,11 @@
+# Use this port for ALL API calls (JWT validated here). Do not call product-service (8085) directly for protected APIs.
 server:
   port: 8080
+
+# JWT - must match user-service app.jwt.secret (same value, UTF-8)
+jwt:
+  secret: myEcommerceJwtSecretKey2026DummySecretForDevOnly12345
+  expiration-ms: 86400000
 
 spring:
   application:
@@ -14,11 +20,46 @@ spring:
 
       routes:
         - id: USER-SERVICE
-          uri: lb://USER-SERVICE
+          uri: lb://user-service
           predicates:
             - Path=/api/users/**
           filters:
             - CustomRouteFilter
+
+        - id: PRODUCT-SERVICE-PRODUCTS
+          uri: lb://product-service
+          predicates:
+            - Path=/api/products/**
+
+        - id: PRODUCT-SERVICE-CATEGORIES
+          uri: lb://product-service
+          predicates:
+            - Path=/api/categories/**
+
+        - id: PRODUCT-SERVICE-IMAGES
+          uri: lb://product-service
+          predicates:
+            - Path=/products/images/**
+
+        - id: ORDER-SERVICE
+          uri: lb://order-service
+          predicates:
+            - Path=/api/order/**
+
+        - id: PAYMENT-SERVICE-PAYMENTS
+          uri: lb://payment-service
+          predicates:
+            - Path=/api/payments/**
+
+        - id: PAYMENT-SERVICE-WEBHOOK
+          uri: lb://payment-service
+          predicates:
+            - Path=/api/payment/**
+
+        - id: INVENTORY-SERVICE
+          uri: lb://inventory-service
+          predicates:
+            - Path=/api/inventory/**
 
 eureka:
   client:

@@ -7,18 +7,52 @@
   Payment, Inventory, etc.
 
 --------------------------------------------------------------------------------
-  1. BASE URL (use this for all API calls)
+  1. BASE URL & GATEWAY ROUTES (use these for API calls)
 --------------------------------------------------------------------------------
-  If you use API Gateway (recommended):
-    Base URL:   http://localhost:8080
+  API Gateway base URL:   http://localhost:8080   ← use this for all APIs
 
-  All examples below use this base. Example:
-    Login URL = http://localhost:8080/api/users/login
-    Products  = http://localhost:8080/api/products
+  All services are routed through the gateway. Use base URL http://localhost:8080:
 
-  Make sure API Gateway and the required services are running (see Section 2).
-  If a path returns 404 from gateway, add a route in api-gateway or call the
-  service directly (see API_ENDPOINTS.txt for direct URLs and ports).
+    /api/users/**       →  user-service
+    /api/products/**    →  product-service
+    /api/categories/**  →  product-service
+    /products/images/** →  product-service
+    /api/order/**       →  order-service
+    /api/payments/**    →  payment-service
+    /api/payment/**     →  payment-service (e.g. webhook)
+    /api/inventory/**   →  inventory-service
+
+  Examples:
+    Login:        POST http://localhost:8080/api/users/login
+    Categories:   POST http://localhost:8080/api/categories
+    Products:     GET  http://localhost:8080/api/products
+    Place order:  POST http://localhost:8080/api/order
+    Payment:      POST http://localhost:8080/api/payments
+
+  ----- AUTH (Gateway JWT) – kahan token lagega -----
+  Base URL:  http://localhost:8080
+  Token kaise use karein:  Header  →  Authorization: Bearer <token>  (login response se "token" copy karke)
+
+  NO TOKEN (public):
+    • POST /api/users/register
+    • POST /api/users/login
+    • GET  /products/images/**
+
+  TOKEN REQUIRED (Bearer token lagao – USER ya ADMIN role):
+    • GET    /api/users/{id}
+    • GET    /api/categories, /api/categories/{id}
+    • POST   /api/categories
+    • PUT    /api/categories/{id}
+    • DELETE /api/categories/{id}
+    • GET    /api/products, /api/products/{id}, /api/products/search, /api/products/filter, /api/products/advance-filter
+    • POST   /api/products, /api/products/{id}/upload-image
+    • PUT    /api/products/{id}
+    • DELETE /api/products/{id}
+    • GET    /api/inventory/**, /api/payments/**
+    • POST   /api/inventory, /api/order, /api/payments
+    • PUT    /api/payments/{id}/status
+
+  Razorpay webhook (/api/payment/webhook/razorpay):  Razorpay server call karta hai (X-Razorpay-Signature header), user token nahi.
 
 --------------------------------------------------------------------------------
   2. HOW TO START (which service first, which URL to fix)
@@ -43,11 +77,12 @@
 --------------------------------------------------------------------------------
   3. USER SERVICE – Register, Login, Get User
 --------------------------------------------------------------------------------
-  Base path:  /api/users
+  Base path:  /api/users   |   Gateway: http://localhost:8080/api/users
 
-  ----- 3.1 REGISTER (POST) -----
+  ----- 3.1 REGISTER (POST) – Auth: NONE -----
   URL:    POST  http://localhost:8080/api/users/register
   Body:   JSON (Content-Type: application/json)
+  Header: No Authorization needed
 
   Dummy request:
   {
@@ -68,9 +103,10 @@
     "updatedAt": "2026-02-17T10:00:00Z"
   }
 
-  ----- 3.2 LOGIN (POST) -----
+  ----- 3.2 LOGIN (POST) – Auth: NONE -----
   URL:    POST  http://localhost:8080/api/users/login
   Body:   JSON
+  Header: No Authorization needed. Response me "token" aata hai – use for next APIs.
 
   Dummy request:
   {
@@ -87,12 +123,9 @@
     "name": "John Doe"
   }
 
-  Use in headers for protected endpoints:
-    Authorization: Bearer <paste_token_here>
-
-  ----- 3.3 GET USER BY ID (GET) – needs auth -----
+  ----- 3.3 GET USER BY ID (GET) – Auth: BEARER TOKEN required -----
   URL:    GET  http://localhost:8080/api/users/1
-  Header: Authorization: Bearer <token>
+  Header: Authorization: Bearer <token>   (login response ka "token" paste karo)
 
   Example response (200 OK):
   {
@@ -108,10 +141,12 @@
 --------------------------------------------------------------------------------
   4. CATEGORY (Product Service) – Create, List, Get, Update, Delete
 --------------------------------------------------------------------------------
-  Base path:  /api/categories
+  Base path:  /api/categories   |   Gateway: http://localhost:8080/api/categories
+  Auth:  Sab endpoints pe Bearer token required (USER/ADMIN).
 
-  ----- 4.1 CREATE CATEGORY (POST) -----
+  ----- 4.1 CREATE CATEGORY (POST) – Auth: BEARER TOKEN -----
   URL:    POST  http://localhost:8080/api/categories
+  Header: Authorization: Bearer <token>
   Body:   JSON
 
   Dummy request:
@@ -123,26 +158,32 @@
 
   Example response: same structure with "id" added (e.g. id: 1).
 
-  ----- 4.2 GET ALL CATEGORIES (GET) -----
+  ----- 4.2 GET ALL CATEGORIES (GET) – Auth: BEARER TOKEN -----
   URL:    GET  http://localhost:8080/api/categories
+  Header: Authorization: Bearer <token>
 
-  ----- 4.3 GET CATEGORY BY ID (GET) -----
+  ----- 4.3 GET CATEGORY BY ID (GET) – Auth: BEARER TOKEN -----
   URL:    GET  http://localhost:8080/api/categories/1
+  Header: Authorization: Bearer <token>
 
-  ----- 4.4 UPDATE CATEGORY (PUT) -----
+  ----- 4.4 UPDATE CATEGORY (PUT) – Auth: BEARER TOKEN -----
   URL:    PUT  http://localhost:8080/api/categories/1
+  Header: Authorization: Bearer <token>
   Body:   JSON  { "id": 1, "name": "Electronics & Gadgets", "description": "...", "parentId": null }
 
-  ----- 4.5 DELETE CATEGORY (DELETE) -----
+  ----- 4.5 DELETE CATEGORY (DELETE) – Auth: BEARER TOKEN -----
   URL:    DELETE  http://localhost:8080/api/categories/1
+  Header: Authorization: Bearer <token>
 
 --------------------------------------------------------------------------------
   5. PRODUCT SERVICE – Add Product, Update, Delete, Get, Search, Filter
 --------------------------------------------------------------------------------
-  Base path:  /api/products
+  Base path:  /api/products   |   Gateway: http://localhost:8080/api/products
+  Auth:  POST/PUT/DELETE/GET sab pe Bearer token (except /products/images/** – no token).
 
-  ----- 5.1 ADD / CREATE PRODUCT (POST) -----
+  ----- 5.1 ADD / CREATE PRODUCT (POST) – Auth: BEARER TOKEN -----
   URL:    POST  http://localhost:8080/api/products
+  Header: Authorization: Bearer <token>
   Body:   JSON
 
   Dummy request (categoryId must exist – create category first):
@@ -159,39 +200,53 @@
 
   Example response: same object with "id" set (e.g. id: 1).
 
-  ----- 5.2 UPDATE PRODUCT (PUT) -----
+  ----- 5.2 UPDATE PRODUCT (PUT) – Auth: BEARER TOKEN -----
   URL:    PUT  http://localhost:8080/api/products/1
+  Header: Authorization: Bearer <token>
   Body:   JSON  (full product object including id; same fields as create)
 
-  ----- 5.3 DELETE PRODUCT (DELETE) -----
+  ----- 5.3 DELETE PRODUCT (DELETE) – Auth: BEARER TOKEN -----
   URL:    DELETE  http://localhost:8080/api/products/1
+  Header: Authorization: Bearer <token>
 
-  ----- 5.4 GET PRODUCT BY ID (GET) -----
+  ----- 5.4 GET PRODUCT BY ID (GET) – Auth: BEARER TOKEN -----
   URL:    GET  http://localhost:8080/api/products/1
+  Header: Authorization: Bearer <token>
 
-  ----- 5.5 GET ALL PRODUCTS (paginated) -----
+  ----- 5.5 GET ALL PRODUCTS (paginated) – Auth: BEARER TOKEN -----
   URL:    GET  http://localhost:8080/api/products?page=0&size=10&sortBy=id&sortDir=asc
+  Header: Authorization: Bearer <token>
 
-  ----- 5.6 SEARCH PRODUCTS -----
+  ----- 5.6 SEARCH PRODUCTS – Auth: BEARER TOKEN -----
   URL:    GET  http://localhost:8080/api/products/search?keyword=mouse&page=0&size=10
+  Header: Authorization: Bearer <token>
 
-  ----- 5.7 FILTER PRODUCTS -----
+  ----- 5.7 FILTER PRODUCTS – Auth: BEARER TOKEN -----
   URL:    GET  http://localhost:8080/api/products/filter?categoryId=1&minPrice=100&maxPrice=1000&page=0&size=10
+  Header: Authorization: Bearer <token>
 
-  ----- 5.8 ADVANCE FILTER -----
+  ----- 5.8 ADVANCE FILTER – Auth: BEARER TOKEN -----
   URL:    GET  http://localhost:8080/api/products/advance-filter?keyword=mouse&categoryId=1&minPrice=100&maxPrice=5000&page=0&size=10&sortBy=price&sortDir=asc
+  Header: Authorization: Bearer <token>
 
-  ----- 5.9 UPLOAD PRODUCT IMAGE (POST, multipart) -----
+  ----- 5.9 UPLOAD PRODUCT IMAGE (POST, multipart) – Auth: BEARER TOKEN -----
   URL:    POST  http://localhost:8080/api/products/1/upload-image
+  Header: Authorization: Bearer <token>
   Body:   form-data  key: file, type: File
+
+  ----- PRODUCT IMAGES (serve image) – Auth: NONE -----
+  URL:    GET  http://localhost:8080/products/images/{fileName}
+  Header: No token (public, e.g. for browser/img src).
 
 --------------------------------------------------------------------------------
   6. INVENTORY SERVICE – Add Stock, Check Stock
 --------------------------------------------------------------------------------
-  Base path:  /api/inventory
+  Base path:  /api/inventory   |   Gateway: http://localhost:8080/api/inventory
+  Auth:  Sab pe Bearer token required.
 
-  ----- 6.1 ADD INVENTORY (POST) -----
+  ----- 6.1 ADD INVENTORY (POST) – Auth: BEARER TOKEN -----
   URL:    POST  http://localhost:8080/api/inventory
+  Header: Authorization: Bearer <token>
   Body:   JSON
 
   Dummy request (skuCode should match product SKU used in order):
@@ -200,18 +255,21 @@
     "quantity": 50
   }
 
-  ----- 6.2 CHECK STOCK (GET) -----
+  ----- 6.2 CHECK STOCK (GET) – Auth: BEARER TOKEN -----
   URL:    GET  http://localhost:8080/api/inventory/MOUSE-001
+  Header: Authorization: Bearer <token>
 
   Example response:  true/false or stock info (depends on your API).
 
 --------------------------------------------------------------------------------
   7. ORDER SERVICE – Place Order
 --------------------------------------------------------------------------------
-  Base path:  /api/order
+  Base path:  /api/order   |   Gateway: http://localhost:8080/api/order
+  Auth:  Bearer token required.
 
-  ----- 7.1 PLACE ORDER (POST) -----
+  ----- 7.1 PLACE ORDER (POST) – Auth: BEARER TOKEN -----
   URL:    POST  http://localhost:8080/api/order
+  Header: Authorization: Bearer <token>
   Body:   JSON
 
   Dummy request (skuCode must exist in inventory; price in decimal):
@@ -232,10 +290,12 @@
 --------------------------------------------------------------------------------
   8. PAYMENT SERVICE – Create Payment, Get by Order, Update Status
 --------------------------------------------------------------------------------
-  Base path:  /api/payments
+  Base path:  /api/payments   |   Gateway: http://localhost:8080/api/payments
+  Auth:  Sab pe Bearer token required.
 
-  ----- 8.1 CREATE PAYMENT (POST) -----
+  ----- 8.1 CREATE PAYMENT (POST) – Auth: BEARER TOKEN -----
   URL:    POST  http://localhost:8080/api/payments
+  Header: Authorization: Bearer <token>
   Body:   JSON
 
   Dummy request (orderId = orderNumber from Place Order response):
@@ -256,11 +316,13 @@
     "transactionId": "order_xyz_razorpay_id"
   }
 
-  ----- 8.2 GET PAYMENT BY ORDER ID (GET) -----
+  ----- 8.2 GET PAYMENT BY ORDER ID (GET) – Auth: BEARER TOKEN -----
   URL:    GET  http://localhost:8080/api/payments/order/a1b2c3d4-e5f6-7890-abcd-ef1234567890
+  Header: Authorization: Bearer <token>
 
-  ----- 8.3 UPDATE PAYMENT STATUS (PUT) -----
+  ----- 8.3 UPDATE PAYMENT STATUS (PUT) – Auth: BEARER TOKEN -----
   URL:    PUT  http://localhost:8080/api/payments/1/status
+  Header: Authorization: Bearer <token>
   Body:   JSON
 
   {
@@ -272,37 +334,47 @@
 --------------------------------------------------------------------------------
   9. RAZORPAY WEBHOOK (Payment Service)
 --------------------------------------------------------------------------------
+  Gateway: http://localhost:8080   |   Auth: NONE (Razorpay server call; user token nahi)
   URL:    POST  http://localhost:8080/api/payment/webhook/razorpay
   Header: X-Razorpay-Signature: <signature_from_razorpay>
   Body:   Raw payload (as sent by Razorpay)
 
-  (Used by Razorpay server only; no dummy JSON needed for normal testing.)
+  (Razorpay server call karta hai; normal testing me isko call mat karo.)
 
 --------------------------------------------------------------------------------
   10. QUICK FLOW – Register → Login → Category → Product → Inventory → Order → Payment
 --------------------------------------------------------------------------------
-  1. POST /api/users/register        (dummy: name, email, password, phone)
-  2. POST /api/users/login          (dummy: email, password) → copy token
-  3. POST /api/categories          (dummy: name, description) → note categoryId
-  4. POST /api/products             (dummy: name, description, price, categoryId, etc.)
-  5. POST /api/inventory            (dummy: skuCode, quantity) – skuCode from product
-  6. POST /api/order                (dummy: skuCode, quantity, price) → copy orderNumber
-  7. POST /api/payments             (dummy: orderId = orderNumber, amount, paymentMethod)
-
   Base URL for all:  http://localhost:8080
+
+  1. POST /api/users/register     – Auth: NONE. Body: name, email, password, phone
+  2. POST /api/users/login        – Auth: NONE. Body: email, password. Response me "token" copy karo
+  3. POST /api/categories         – Auth: Bearer <token>. Body: name, description → categoryId
+  4. POST /api/products           – Auth: Bearer <token>. Body: name, price, categoryId, etc.
+  5. POST /api/inventory          – Auth: Bearer <token>. Body: skuCode, quantity
+  6. POST /api/order              – Auth: Bearer <token>. Body: skuCode, quantity, price → orderNumber
+  7. POST /api/payments           – Auth: Bearer <token>. Body: orderId (=orderNumber), amount, paymentMethod
+
+  Postman me: Login ke baad Authorization tab → Type: Bearer Token → Token: <paste token>
+  Baaki sab requests me same token auto use ho sakta hai agar collection/environment me set karo.
 
 --------------------------------------------------------------------------------
   11. FORMATTING TIPS (Postman / cURL)
 --------------------------------------------------------------------------------
+  - Base URL:      http://localhost:8080  (sab APIs gateway se)
   - Content-Type:  application/json  for POST/PUT with JSON body.
-  - Auth:          Header  Authorization: Bearer <token>  for /api/users/{id}.
+  - Auth (jahan token lage):  Header  Authorization: Bearer <token>  (login response ka "token")
+  - Token kahan lage:  Section 1 me "AUTH" list dekho – register/login/images ke alawa sab pe token.
   - Pagination:    page=0, size=10, sortBy=id, sortDir=asc  where supported.
   - Numbers:      price/amount as number (e.g. 499.00), not string.
 
-  cURL example – Login:
-  curl -X POST http://localhost:8080/api/users/login ^
-    -H "Content-Type: application/json" ^
-    -d "{\"email\":\"john.doe@example.com\",\"password\":\"password123\"}"
+  cURL – Login (no token):
+  curl -X POST http://localhost:8080/api/users/login -H "Content-Type: application/json" -d "{\"email\":\"john.doe@example.com\",\"password\":\"password123\"}"
+
+  cURL – Create category (token required; YOUR_TOKEN replace karo):
+  curl -X POST http://localhost:8080/api/categories -H "Content-Type: application/json" -H "Authorization: Bearer YOUR_TOKEN" -d "{\"name\":\"Electronics\",\"description\":\"Mobile, Laptop\",\"parentId\":null}"
+
+  cURL – Create product (token required):
+  curl -X POST http://localhost:8080/api/products -H "Content-Type: application/json" -H "Authorization: Bearer YOUR_TOKEN" -d "{\"name\":\"Mouse\",\"description\":\"Wireless\",\"price\":499,\"discountPrice\":399,\"quantity\":10,\"brand\":\"X\",\"categoryId\":1}"
 
   (Use one line or escape quotes as per your shell.)
 
