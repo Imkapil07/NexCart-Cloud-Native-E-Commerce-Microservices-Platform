@@ -22,7 +22,8 @@ public class ApiGatewayApplication {
 	}
 
 	@EventListener(ApplicationReadyEvent.class)
-	public void onReady(Environment env) {
+	public void onReady(ApplicationReadyEvent event) {
+		Environment env = event.getApplicationContext().getEnvironment();
 		String port = env.getProperty("server.port", "8080");
 		log.info("[Gateway] ========================================");
 		log.info("[Gateway] API Gateway is UP. Use http://localhost:{} for ALL API calls.", port);

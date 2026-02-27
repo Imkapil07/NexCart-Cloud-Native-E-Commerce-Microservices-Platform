@@ -49,15 +49,17 @@ public class ProductServiceImpl implements ProductService{
      **/
     @Override
     public ProductDto updateProduct(Long id, ProductDto dto) {
-        Product product =  productRepo
+        Product product = productRepo
                 .findById(id)
-                .orElseThrow(()->
-                        new RuntimeException("Product is not Found"));
+                .orElseThrow(() -> new RuntimeException("Product is not Found"));
         product.setName(dto.getName());
         product.setDescription(dto.getDescription());
         product.setPrice(dto.getPrice());
         product.setDiscountPrice(dto.getDiscountPrice());
-        if(dto.getCategoryId() != null) {
+        product.setQuantity(dto.getQuantity());
+        product.setBrand(dto.getBrand());
+        product.setImageUrl(dto.getImageUrl());
+        if (dto.getCategoryId() != null) {
             Category category = new Category();
             category.setId(dto.getCategoryId());
             product.setCategory(category);
